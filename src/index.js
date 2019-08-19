@@ -38,6 +38,28 @@ function initThree() {
   // Mouse listeners
   const mouseHandler = new MouseHandler(scene, camera);
 
+  // Calculate relative screen height and width
+  const computeRelativeScreenHeightAndWidth = (z=0) => {
+    // https://stackoverflow.com/questions/13055214/mouse-canvas-x-y-to-three-js-world-x-y-z
+    var vec = new THREE.Vector3(); // create once and reuse
+    var pos = new THREE.Vector3(); // create once and reuse
+    
+    vec.set(
+        1,
+        -1,
+        0);
+
+    vec.unproject( camera );
+    
+    vec.sub( camera.position ).normalize();
+    
+    var distance = - camera.position.z / vec.z;
+
+    pos.copy( camera.position ).add( vec.multiplyScalar( distance ) );
+
+    return { height: Math.abs(pos.y) * 2, width: Math.abs(pos.x) * 2 };
+  }
+
 
   // Window resize
   window.addEventListener( 'resize', () => {
@@ -50,13 +72,26 @@ function initThree() {
     canvas.height = window.innerHeight;
 
     renderer.setSize( window.innerWidth, window.innerHeight );
+
+    // Set the screenWidth and height on the z=0 plane
+    const {height, width} = computeRelativeScreenHeightAndWidth();
+
+    screenWidth = width;
+    screenHeight = height;
+
   }, false);
+
+  // Set the default screenWidth and height on the z=0 plane
+  const {height, width} = computeRelativeScreenHeightAndWidth();
+  screenWidth = width;
+  screenHeight = height;
 
 
   return { scene, renderer, camera, canvas, mouseHandler };
 }
 
-
+let screenWidth = 1;
+let screenHeight = 1;
 
 function main() {
 
@@ -66,8 +101,6 @@ function main() {
 
   const { scene, renderer, camera, mouseHandler } = initThree();
 
-  const screenWidth = window.innerWidth*0.002;
-  const screenHeight = window.innerHeight*0.002;
 
 
   // Generate all the circles
