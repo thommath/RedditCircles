@@ -1,7 +1,7 @@
 const THREE = require('three');
 
 class MouseHandler {
-  constructor(scene, camera) {
+  constructor(scene, camera, getScreenHeight, getScreenWidth) {
 
     this.camera = camera;
     this.relativeMouse = {x: 0, y:0};
@@ -10,20 +10,24 @@ class MouseHandler {
 
     this.mouseIsPressed = false;
 
+    this.listeners = [];
+
     const onMouseMove = ( event ) => {
       
       // calculate mouse position in normalized device coordinates
       // (-1 to +1) for both components
-      this.relativeMouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-      this.relativeMouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+      this.relativeMouse.x = ( event.clientX / getScreenWidth() ) * 2 - 1;
+      this.relativeMouse.y = - ( event.clientY / getScreenHeight() ) * 2 + 1;
 
       this.absoluteMouse = {x: event.clientX, y: event.clientY};
+
+      const pos3d = this.get3DMousePosition();
+      this.listeners.forEach(f => f({x: pos3d.x, y: pos3d.y, z: pos3d.z}, this.absoluteMouse));
     
     }
 
     window.addEventListener('mousedown', () => (this.mouseIsPressed = true));
     window.addEventListener('mouseup', () => (this.mouseIsPressed = false));
-    
     window.addEventListener('mousemove', onMouseMove)
     
   }

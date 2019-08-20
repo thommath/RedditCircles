@@ -1,9 +1,28 @@
 import * as Comlink from 'comlink';
-const THREE = require('three');
 
-const { moveCircles, maxVel } = require('./Circles')
+const { maxVel, numberOfCircles, Circle } = require('./Circles');
 
-const tempVec = new THREE.Vector3();
+
+// Dist = sqrt(a^2+b^2+c^2)
+const dist = (a, b) => Math.sqrt(
+  Math.pow(a.pos.x - b.pos.x, 2) +
+  Math.pow(a.pos.y - b.pos.y, 2) +
+  Math.pow(a.pos.z - b.pos.z, 2));
+
+const length = (a) => Math.sqrt(
+  Math.pow(a.pos.x, 2) + 
+  Math.pow(a.pos.y, 2) + 
+  Math.pow(a.pos.z, 2)
+);
+
+const applyToVecs = (a, b, op) => ({
+  x: op(a.x, b.x),
+  y: op(a.y, b.y),
+  z: op(a.z, b.z)
+})
+const subPos = (a, b) => applyToVecs(a, b, (a, b) => (a - b));
+
+
 
 class WorkerClass {
   logSomething() {
@@ -30,15 +49,48 @@ class WorkerClass {
   // First get a clone of the system
   // cloning might take some time
   // But only needs to send velocity and position, UI info is irrelevant
-  initialState(sircleList) {
-    this.circles = sircleList;
-    console.log('hi')
+  initialState(windowHeight, windowWidth) {
+    this.mouse = {x: 0, y: 0, z: 0};
+    this.circles = [];
+
+    for (let i = 0; i < numberOfCircles; i+=1) {
+      this.circles.push(new Circle(windowHeight, windowWidth));
+    }
+
+    return this.circles.map(c => c.getTransferData());
+  }
+
+  updateMousePosition(pos3d) {
+    this.mouse = pos3d;
+  }
+
+  onTick() {
+    // Affect circle velocity with mouse position
+    this.circles.forEach(circle => {
+
+      const subVec = subPos(circle, this.mouse);
+      
+      const range = 0.01;
+      if (length(subVec) < range) {
+
+        // Accelerate the circles away from the mouse
+        circle.vx += (range*2-subVec.x) * maxVel * range/10;
+        circle.vy += (range*2-subVec.y) * maxVel * range/10;
+
+        // Limit the top velocity
+        circle.vx = Math.min(maxVel, circle.vx);
+        circle.vy = Math.min(maxVel, circle.vy);
+        circle.vx = Math.max(-maxVel, circle.vx);
+        circle.vy = Math.max(-maxVel, circle.vy);
+
+      }
+    });
   }
 
   // Then calculate what circles will be close to each other in the next x ms
   calculateCloseCircles(dt, screenHeight, screenWidth) {
 
-    moveCircles(this.circles, dt, screenHeight, screenWidth);
+    this.circles.forEach(c => c.move(dt, screenHeight, screenWidth));
 
     const matrix = [];
     
@@ -96,23 +148,17 @@ class WorkerClass {
           console.log(t);
 */
 
-
-
-
           // So math is difficult, let's do it the easy way
           // Who can we prove are not close to each other?
           
-          // Dist = sqrt(a^2+b^2+c^2)
-          const d = Math.sqrt(
-            Math.pow(this.circles[i].pos.x - this.circles[o].pos.x, 2) +
-            Math.pow(this.circles[i].pos.y - this.circles[o].pos.y, 2) +
-            Math.pow(this.circles[i].pos.z - this.circles[o].pos.z, 2));
+          const d = dist(this.circles[i], this.circles[o]);
           
           // d = v*t
           // t = d/v
           const minT = d / (Math.sqrt(Math.pow(maxVel, 2) * 2));
 
-          row.push(minT);
+          if (minT < 1000)
+            row.push(o);
           
       }
 

@@ -1,55 +1,166 @@
 const THREE = require('three');
-const { getScreenHeight, getScreenWidth } = require('./Window');
 
 // Config
 const maxVel = 0.00015;
-const numberOfCircles = 300;
+const numberOfCircles = 400;
 
-const circles = [];
+class Circle {
 
-// Generate all the circles
-const initCircles = (scene) => {
-  const screenHeight = getScreenHeight();
-  const screenWidth = getScreenWidth();
-  for(let i = 0; i < numberOfCircles; i += 1) {
-
-    var circle = new THREE.Mesh(
-      new THREE.CircleGeometry(0.01),
-      new THREE.MeshBasicMaterial({ color: 0xfafafa })
-    );
-    scene.add( circle );
-    
-    circles.push({
-      mesh: circle,
-      vel: { x: (Math.random()-0.5)*maxVel, y: (Math.random()-0.5)*maxVel, z: 0},
-      pos: { x: (Math.random()*screenWidth-screenWidth/2), y: (Math.random()*screenHeight-screenHeight/2), z: 0},
-      lines: {}
-    });
+  constructor (screenHeight, screenWidth) {
+    if (screenHeight && screenWidth) {
+      this.vel = { x: (Math.random()-0.5)*maxVel, y: (Math.random()-0.5)*maxVel, z: 0};
+      this.pos = { x: (Math.random()*screenWidth-screenWidth/2), y: (Math.random()*screenHeight-screenHeight/2), z: 0};
+    }
   }
-}
 
-const moveCircles = (circles, dt, screenHeight, screenWidth) => {
-  // Update positions
-  circles.forEach((circle) => {
-    // Move the circles
-    circle.pos.x += circle.vel.x*dt;
-    circle.pos.y += circle.vel.y*dt;
+  move (dt, screenHeight, screenWidth) {
+    // Move the circle
+    this.pos.x += this.vel.x*dt;
+    this.pos.y += this.vel.y*dt;
 
     // Wrap the screen
     // Using translate to maintain the offset over the border in case of serious lagg
-    if (circle.pos.y > screenHeight/2) {
-      circle.pos.y += -screenHeight;
+    if (this.pos.y > screenHeight/2) {
+      this.pos.y += -screenHeight;
     }
-    if (circle.pos.y < -screenHeight/2) {
-      circle.pos.y += screenHeight;
+    if (this.pos.y < -screenHeight/2) {
+      this.pos.y += screenHeight;
     }
-    if (circle.pos.x > screenWidth/2) {
-      circle.pos.x += -screenWidth;
+    if (this.pos.x > screenWidth/2) {
+      this.pos.x += -screenWidth;
     }
-    if (circle.pos.x < -screenWidth/2) {
-      circle.pos.x += screenWidth;
+    if (this.pos.x < -screenWidth/2) {
+      this.pos.x += screenWidth;
     }
-  });
+  }
+
+  getTransferData() {
+    return {
+      pos: this.pos,
+      vel: this.vel,
+    }
+  }
 }
 
-export {maxVel, numberOfCircles, moveCircles, initCircles, circles}
+class DrawableCircle extends Circle{
+
+  constructor(pos, vel, scene) {
+    super();
+
+    this.scene = scene;
+    this.pos = pos;
+    this.vel = vel;
+
+    this.mesh = new THREE.Mesh(
+      new THREE.CircleGeometry(0.01),
+      new THREE.MeshBasicMaterial({ color: 0xfafafa })
+    );
+    scene.add(this.mesh);
+    this.approx = [];
+    this.lines = [];
+  }
+
+
+  render (dt, screenHeight, screenWidth, circles) {
+    this.move(dt, screenHeight, screenWidth);
+    this.mesh.position.set(this.pos.x, this.pos.y, this.pos.z);
+
+    for (let i = 0; i < this.approx.length; i += 1) {
+
+      const d = this.mesh.position.distanceTo(circles[this.approx[i]].mesh.position);
+      if (d > 1) {
+        this.approx.splice(i);
+        i -= 1;
+        continue;
+      }
+
+      let geo;
+      let material;
+      if (this.lines[i]) {
+        geo = this.lines[i].geometry;
+        material = this.lines[i].material;
+        geo.verticesNeedUpdate = true;
+      } else {
+        geo = new THREE.Geometry();
+        material = new THREE.LineBasicMaterial( { color: 0xaaaaaa } );
+        const line = new THREE.Line(
+          geo,
+          material
+        );
+        
+        this.scene.add( line );
+        this.lines[i] = line;
+      }
+
+      geo.setFromPoints([this.mesh.position, circles[this.approx[i]].mesh.position]);
+    }
+
+    if (this.lines.length > this.approx.length) {
+      for (let i = 0; i < this.lines.length - this.approx.length; i += 1) {
+        const line = this.lines.pop();
+        this.scene.remove(line);
+        line.geometry.dispose();
+        line.material.dispose();
+      }
+    }
+
+    /*
+    // Draw lines between close circles
+    const maxDist = 0.25;
+    const maxTime = time - lcalcTime + (maxDist/ Math.sqrt(Math.pow(maxVel, 2) * 2));
+
+    for (let o = 0; o < close.length - i - 1; o += 1) {
+      if (!close || close[i][o] >= maxTime) {stats.a += 1;continue};
+
+      const c2 = circles[i+o+1];
+
+      stats.b += 1;
+      const dist = circle.mesh.position.distanceTo(c2.mesh.position);
+
+      if (dist < 0.25) {
+
+        let geo;
+        let material;
+        // If line exists update points and line width
+        if (circle.lines[o]) {
+          
+          geo = circle.lines[o].geometry;
+          material = circle.lines[o].material;
+          geo.verticesNeedUpdate = true;
+          
+        } else {
+
+          geo = new THREE.Geometry();
+          material = new THREE.LineBasicMaterial( { color: 0xaaaaaa } );
+          const line = new THREE.Line(
+            geo,
+            material
+          );
+          
+          scene.add( line );   
+          circle.lines[o] = line;
+        }
+
+        geo.setFromPoints([circle.mesh.position, c2.mesh.position]);
+        material.linewidth = 3-Math.ceil(dist*20);
+
+      } else {
+        if (circle.lines[o]) {
+          scene.remove(circle.lines[o]);
+          circle.lines[o].geometry.dispose();
+          circle.lines[o].material.dispose();
+          circle.lines[o] = null;
+        }
+      }
+    
+    }*/
+  }
+
+}
+
+export {
+  maxVel, 
+  numberOfCircles,
+  Circle,
+  DrawableCircle,
+}

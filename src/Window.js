@@ -33,7 +33,7 @@ const initThree = () => {
     renderer.render(scene, camera);
   
     // Mouse listeners
-    const mouseHandler = new MouseHandler(scene, camera);
+    const mouseHandler = new MouseHandler(scene, camera, getScreenHeight, getScreenWidth);
   
     // Calculate relative screen height and width
     const computeRelativeScreenHeightAndWidth = (z=0) => {
