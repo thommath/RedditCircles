@@ -39,10 +39,26 @@ async function main() {
     setTimeout(updateApprox, 50);
   }
   updateApprox();
+
+  // Update pos and vel from webworker
+  const sync = async () => {
+    const diff = await worker.getDiff();
+
+    diff.forEach(d => {
+      circles[d.id].diff.push({
+        dt: d.time - lastTime,
+        ...d,
+      });
+    });
+    setTimeout(sync, 100);
+  }
+  sync();
   
   function render(time) {
     const dt = (time - lastTime);
     lastTime = time;
+
+    worker.onTick();
 
     const height = getScreenHeight();
     const width = getScreenWidth();
@@ -50,9 +66,6 @@ async function main() {
     for (let i = 0; i < circles.length; i += 1) {
       circles[i].render(dt, height, width, circles);
     }
-
-    /*
- */
    
     renderer.render(scene, camera);
    

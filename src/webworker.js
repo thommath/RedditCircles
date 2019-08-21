@@ -10,9 +10,9 @@ const dist = (a, b) => Math.sqrt(
   Math.pow(a.pos.z - b.pos.z, 2));
 
 const length = (a) => Math.sqrt(
-  Math.pow(a.pos.x, 2) + 
-  Math.pow(a.pos.y, 2) + 
-  Math.pow(a.pos.z, 2)
+  Math.pow(a.x, 2) + 
+  Math.pow(a.y, 2) + 
+  Math.pow(a.z, 2)
 );
 
 const applyToVecs = (a, b, op) => ({
@@ -52,6 +52,9 @@ class WorkerClass {
   initialState(windowHeight, windowWidth) {
     this.mouse = {x: 0, y: 0, z: 0};
     this.circles = [];
+    this.time = 0;
+    this.diff = [];
+    this.lastTickTime = 0;
 
     for (let i = 0; i < numberOfCircles; i+=1) {
       this.circles.push(new Circle(windowHeight, windowWidth));
@@ -65,33 +68,49 @@ class WorkerClass {
   }
 
   onTick() {
+    if (this.lastTickTime === this.time) return;
+    this.lastTickTime = this.time;
+
+    
     // Affect circle velocity with mouse position
-    this.circles.forEach(circle => {
-
-      const subVec = subPos(circle, this.mouse);
+    this.circles.forEach((circle, i) => {
       
-      const range = 0.01;
+      const subVec = subPos(circle.pos, this.mouse);
+      
+      const range = 0.1;
+      
       if (length(subVec) < range) {
-
+        
         // Accelerate the circles away from the mouse
-        circle.vx += (range*2-subVec.x) * maxVel * range/10;
-        circle.vy += (range*2-subVec.y) * maxVel * range/10;
+        circle.vel.x += (subVec.x) * maxVel * range/0.1;
+        circle.vel.y += (subVec.y) * maxVel * range/0.1;
 
         // Limit the top velocity
-        circle.vx = Math.min(maxVel, circle.vx);
-        circle.vy = Math.min(maxVel, circle.vy);
-        circle.vx = Math.max(-maxVel, circle.vx);
-        circle.vy = Math.max(-maxVel, circle.vy);
+        circle.vel.x = Math.min(maxVel, circle.vel.x);
+        circle.vel.y = Math.min(maxVel, circle.vel.y);
+        circle.vel.x = Math.max(-maxVel, circle.vel.x);
+        circle.vel.y = Math.max(-maxVel, circle.vel.y);
 
+        this.diff.push({ id: i, ...circle.getTransferData(), time: this.time })
       }
     });
+  }
+
+  // Get the difference
+  getDiff() {
+    const diff = this.diff;
+    this.diff = [];
+    return diff;
   }
 
   // Then calculate what circles will be close to each other in the next x ms
   calculateCloseCircles(dt, screenHeight, screenWidth) {
 
+
     this.circles.forEach(c => c.move(dt, screenHeight, screenWidth));
 
+    this.time += dt;
+    
     const matrix = [];
     
     for (let i = 0; i < this.circles.length; i += 1) {

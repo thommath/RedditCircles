@@ -16,8 +16,8 @@ class MouseHandler {
       
       // calculate mouse position in normalized device coordinates
       // (-1 to +1) for both components
-      this.relativeMouse.x = ( event.clientX / getScreenWidth() ) * 2 - 1;
-      this.relativeMouse.y = - ( event.clientY / getScreenHeight() ) * 2 + 1;
+      this.relativeMouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+      this.relativeMouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
       this.absoluteMouse = {x: event.clientX, y: event.clientY};
 
@@ -39,25 +39,25 @@ class MouseHandler {
   // Doesn't work if camera is at z position 0
   get3DMousePosition(z=0) {
     // https://stackoverflow.com/questions/13055214/mouse-canvas-x-y-to-three-js-world-x-y-z
-    var vec = new THREE.Vector3(); // create once and reuse
-    var pos = new THREE.Vector3(); // create once and reuse
     
     vec.set(
-        this.relativeMouse.x,
-        this.relativeMouse.y,
-        z);
+      this.relativeMouse.x,
+      this.relativeMouse.y,
+      z);
 
     vec.unproject( this.camera );
     
     vec.sub( this.camera.position ).normalize();
     
     var distance = - this.camera.position.z / vec.z;
-
+    
     pos.copy( this.camera.position ).add( vec.multiplyScalar( distance ) );
 
-    return vec;
+    return pos;
   }
-
+    
 }
+var vec = new THREE.Vector3(); // create once and reuse
+var pos = new THREE.Vector3(); // create once and reuse
 
 export { MouseHandler };

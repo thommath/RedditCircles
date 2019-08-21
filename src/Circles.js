@@ -50,6 +50,7 @@ class DrawableCircle extends Circle{
     this.scene = scene;
     this.pos = pos;
     this.vel = vel;
+    this.diff = [];
 
     this.mesh = new THREE.Mesh(
       new THREE.CircleGeometry(0.01),
@@ -62,7 +63,24 @@ class DrawableCircle extends Circle{
 
 
   render (dt, screenHeight, screenWidth, circles) {
+
+    if (this.diff.length) {
+      this.diff.forEach(d => {
+        // Move back in time
+        this.move(d.dt, screenHeight, screenWidth);
+        // Update object
+        this.pos = d.pos;
+        this.vel = d.vel;
+        // Move forward in time
+        this.move(-d.dt, screenHeight, screenWidth);
+      });
+
+      this.diff = [];
+
+    }
+
     this.move(dt, screenHeight, screenWidth);
+
     this.mesh.position.set(this.pos.x, this.pos.y, this.pos.z);
 
     for (let i = 0; i < this.approx.length; i += 1) {
@@ -86,12 +104,17 @@ class DrawableCircle extends Circle{
         const line = new THREE.Line(
           geo,
           material
-        );
-        
-        this.scene.add( line );
-        this.lines[i] = line;
-      }
+          );
+          
+          this.scene.add( line );
+          this.lines[i] = line;
+        }
 
+      
+      const value = Math.round(9*((1 + Math.sin(2*this.pos.y + this.pos.x * 3))/2 ));
+      const value2 = Math.round(9*((1 + Math.sin(1.5+2*this.pos.y + this.pos.x * 3))/2 ));
+      const value3 = Math.round(9*((1 + Math.sin(3+2*this.pos.y + this.pos.x * 3))/2 ));
+      material.color = new THREE.Color("#" + value3 + value + value2);
       geo.setFromPoints([this.mesh.position, circles[this.approx[i]].mesh.position]);
     }
 
