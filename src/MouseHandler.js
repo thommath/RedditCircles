@@ -11,6 +11,7 @@ class MouseHandler {
     this.mouseIsPressed = false;
 
     this.listeners = [];
+    this.clickListeners = [];
 
     const onMouseMove = ( event ) => {
       
@@ -22,12 +23,17 @@ class MouseHandler {
       this.absoluteMouse = {x: event.clientX, y: event.clientY};
 
       const pos3d = this.get3DMousePosition();
-      this.listeners.forEach(f => f({x: pos3d.x, y: pos3d.y, z: pos3d.z}, this.absoluteMouse));
+      this.listeners.forEach(f => f({x: pos3d.x, y: pos3d.y, z: pos3d.z}, this.relativeMouse, this.absoluteMouse));
     
     }
 
     window.addEventListener('mousedown', () => (this.mouseIsPressed = true));
-    window.addEventListener('mouseup', () => (this.mouseIsPressed = false));
+    window.addEventListener('mouseup', () => {
+      this.mouseIsPressed = false;
+      const pos3d = this.get3DMousePosition();
+      this.clickListeners.forEach(f => f({x: pos3d.x, y: pos3d.y, z: pos3d.z}, this.relativeMouse, this.absoluteMouse));
+    });
+
     window.addEventListener('mousemove', onMouseMove)
     
   }

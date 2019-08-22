@@ -4,8 +4,35 @@ const { initThree, getScreenHeight, getScreenWidth } = require('./Window');
 const { DrawableCircle } = require('./Circles')
 
 import * as Comlink from 'comlink'; 
+import { Tooltip } from './Tooltip';
+import { Overlay } from './Overlay';
 
 async function main() {
+
+  
+  function httpGetAsync(theUrl, callback)
+  {
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.onreadystatechange = function() { 
+          if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+              callback(xmlHttp.responseText);
+      }
+      xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+      xmlHttp.send(null);
+  }
+
+  function httpGet(theUrl)
+  {
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.open( "GET", theUrl, false ); // false for synchronous request
+      xmlHttp.send( null );
+      return xmlHttp.responseText;
+  }
+
+  const httpData = httpGet("https://www.reddit.com/r/programmerhumor.json?limit=100");
+  const data = JSON.parse(httpData);
+  const content = data.data.children.map(e => e.data);
+
 
   // Initialize the canvas and renderer
   const { scene, renderer, camera, mouseHandler } = initThree();
@@ -22,6 +49,15 @@ async function main() {
     worker.initialState(getScreenHeight(), getScreenWidth());
   // Map to drawable circles
   const circles = circleList.map(c => new DrawableCircle(c.pos, c.vel, scene));
+
+
+  circles.forEach((c, i) => {
+    if (i >= content.length) {
+      c.mesh.content = {title: 'Not this one'};
+      return;
+    }
+    c.mesh.content = content[i];
+  });
 
   // Update circles with other circles that are close
   let lastTime = 0;
@@ -49,6 +85,16 @@ async function main() {
     });
   }
   worker.setSyncCallback(Comlink.proxy(newSync));
+
+  // Add tooltip on hover
+  const interactableObjects = [];
+  circles.forEach(c => interactableObjects.push(c.mesh));
+  const tooltip = new Tooltip(camera, interactableObjects);
+  mouseHandler.listeners.push(tooltip.update.bind(tooltip));
+
+  // Add overlay for on click
+  const overlay = new Overlay(camera, interactableObjects);
+  mouseHandler.clickListeners.push(overlay.update.bind(overlay));
   
   function render(time) {
     const dt = (time - lastTime);

@@ -67,6 +67,7 @@ const lineMaterial = new THREE.ShaderMaterial( {
     gl_FragColor = color;
   }
   `,
+  linewidth: 1,
   transparent: true,
 } );
 
@@ -81,8 +82,8 @@ class DrawableCircle extends Circle{
     this.diff = [];
 
     this.mesh = new THREE.Mesh(
-      new THREE.CircleGeometry(0.01),
-      new THREE.MeshBasicMaterial({ color: 0xfafafa })
+      new THREE.CircleGeometry(0.01, 5),
+      new THREE.MeshBasicMaterial({ color: 0xdddddd })
     );
     scene.add(this.mesh);
     this.approx = [];
