@@ -42,6 +42,34 @@ class Circle {
   }
 }
 
+const lineMaterial = new THREE.ShaderMaterial( {
+  vertexShader: 
+  `
+  varying vec4 color;
+
+  void main() {
+
+    float sin_value = position[0] * 2.0;
+    float val_a = (1.0+sin(0.0 + position[1] + sin_value))/2.0;
+    float val_b = (1.0+sin(1.5 + position[1] + sin_value))/2.0;
+    float val_c = (1.0+sin(3.0 + position[1] + sin_value))/2.0;
+
+    color = vec4(val_a, val_b, val_c, 0.5);
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+  `,
+  fragmentShader: 
+  `
+  varying vec4 color;
+  
+  void main() {
+    gl_FragColor = color;
+  }
+  `,
+  transparent: true,
+} );
+
 class DrawableCircle extends Circle{
 
   constructor(pos, vel, scene) {
@@ -93,29 +121,27 @@ class DrawableCircle extends Circle{
       }
 
       let geo;
-      let material;
       if (this.lines[i]) {
         geo = this.lines[i].geometry;
-        material = this.lines[i].material;
         geo.verticesNeedUpdate = true;
       } else {
         geo = new THREE.Geometry();
-        material = new THREE.LineBasicMaterial( { color: 0xaaaaaa } );
         const line = new THREE.Line(
           geo,
-          material
+          lineMaterial
           );
           
           this.scene.add( line );
           this.lines[i] = line;
         }
 
-      
+      /*
       const value = Math.round(9*((1 + Math.sin(2*this.pos.y + this.pos.x * 3))/2 ));
       const value2 = Math.round(9*((1 + Math.sin(1.5+2*this.pos.y + this.pos.x * 3))/2 ));
       const value3 = Math.round(9*((1 + Math.sin(3+2*this.pos.y + this.pos.x * 3))/2 ));
       material.color = new THREE.Color("#" + value3 + value + value2);
-      geo.setFromPoints([this.mesh.position, circles[this.approx[i]].mesh.position]);
+      */
+     geo.setFromPoints([this.mesh.position, circles[this.approx[i]].mesh.position]);
     }
 
     if (this.lines.length > this.approx.length) {
@@ -123,7 +149,7 @@ class DrawableCircle extends Circle{
         const line = this.lines.pop();
         this.scene.remove(line);
         line.geometry.dispose();
-        line.material.dispose();
+      //  line.material.dispose();
       }
     }
 
