@@ -1,6 +1,5 @@
 'use strict';
 
-const THREE = require('three');
 const { initThree, getScreenHeight, getScreenWidth } = require('./Window');
 const { DrawableCircle } = require('./Circles')
 
@@ -41,18 +40,15 @@ async function main() {
   updateApprox();
 
   // Update pos and vel from webworker
-  const sync = async () => {
-    const diff = await worker.getDiff();
-
+  const newSync = (diff) => {
     diff.forEach(d => {
       circles[d.id].diff.push({
         dt: d.time - lastTime,
         ...d,
       });
     });
-    setTimeout(sync, 100);
   }
-  sync();
+  worker.setSyncCallback(Comlink.proxy(newSync));
   
   function render(time) {
     const dt = (time - lastTime);

@@ -29,6 +29,9 @@ class WorkerClass {
     console.log('hello');
   }
 
+  setSyncCallback(func) {
+    this.cb = func;
+  }
 
   // Apply acceleration from being close to the mouse 
 
@@ -94,6 +97,8 @@ class WorkerClass {
         this.diff.push({ id: i, ...circle.getTransferData(), time: this.time })
       }
     });
+
+    this.cb(this.getDiff());
   }
 
   // Get the difference
