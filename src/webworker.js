@@ -181,7 +181,7 @@ class WorkerClass {
           // t = d/v
           const minT = d / (Math.sqrt(Math.pow(maxVel, 2) * 2));
 
-          if (minT < 1000)
+          if (minT < 2000)
             row.push(o);
           
       }

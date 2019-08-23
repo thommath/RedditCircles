@@ -2,7 +2,7 @@ const THREE = require('three');
 
 // Config
 const maxVel = 0.00015;
-const numberOfCircles = 400;
+const numberOfCircles = 100;
 
 class Circle {
 
@@ -67,7 +67,7 @@ const lineMaterial = new THREE.ShaderMaterial( {
     gl_FragColor = color;
   }
   `,
-  linewidth: 1,
+  linewidth: 10,
   transparent: true,
 } );
 
@@ -82,8 +82,8 @@ class DrawableCircle extends Circle{
     this.diff = [];
 
     this.mesh = new THREE.Mesh(
-      new THREE.CircleGeometry(0.01, 5),
-      new THREE.MeshBasicMaterial({ color: 0xdddddd })
+      new THREE.SphereGeometry(0.04, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xaaaaaa })
     );
     scene.add(this.mesh);
     this.approx = [];
@@ -129,7 +129,7 @@ class DrawableCircle extends Circle{
         geo = new THREE.Geometry();
         const line = new THREE.Line(
           geo,
-          lineMaterial
+          lineMaterial,
           );
           
           this.scene.add( line );
