@@ -43,8 +43,13 @@ class Circle {
 }
 
 const lineMaterial = new THREE.ShaderMaterial( {
+  uniforms: {
+    length: {value: 1},
+  },
   vertexShader: 
   `
+  attribute float vLength;
+
   varying vec4 color;
 
   void main() {
@@ -54,7 +59,7 @@ const lineMaterial = new THREE.ShaderMaterial( {
     float val_b = (1.0+sin(1.5 + position[1] + sin_value))/2.0;
     float val_c = (1.0+sin(3.0 + position[1] + sin_value))/2.0;
 
-    color = vec4(val_a, val_b, val_c, 0.5);
+    color = vec4(val_a, val_b, val_c, 1.0-4.0*vLength*vLength);
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
@@ -82,7 +87,7 @@ class DrawableCircle extends Circle{
     this.diff = [];
 
     this.mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.04, 10, 10),
+      new THREE.CircleGeometry(0.04, 10),
       new THREE.MeshBasicMaterial({ color: 0xaaaaaa })
     );
     scene.add(this.mesh);
@@ -126,15 +131,15 @@ class DrawableCircle extends Circle{
         geo = this.lines[i].geometry;
         geo.verticesNeedUpdate = true;
       } else {
-        geo = new THREE.Geometry();
+        geo = new THREE.BufferGeometry();
         const line = new THREE.Line(
           geo,
           lineMaterial,
-          );
-          
-          this.scene.add( line );
-          this.lines[i] = line;
-        }
+        );
+        
+        this.scene.add( line );
+        this.lines[i] = line;
+      }
 
       /*
       const value = Math.round(9*((1 + Math.sin(2*this.pos.y + this.pos.x * 3))/2 ));
@@ -142,7 +147,19 @@ class DrawableCircle extends Circle{
       const value3 = Math.round(9*((1 + Math.sin(3+2*this.pos.y + this.pos.x * 3))/2 ));
       material.color = new THREE.Color("#" + value3 + value + value2);
       */
-     geo.setFromPoints([this.mesh.position, circles[this.approx[i]].mesh.position]);
+     geo.setFromPoints([{...this.mesh.position, z: -0.01}, {...circles[this.approx[i]].mesh.position, z: -0.01}]);
+
+      const vLength = new Float32Array(geo.attributes.position.count);
+      const length = this.mesh.position.distanceTo(circles[this.approx[i]].mesh.position);
+
+      for (let i = 0; i < vLength.length; i += 1) {
+        vLength[i] = length;
+      }
+
+      geo.addAttribute( "vLength",  new THREE.BufferAttribute(vLength, 1));
+      geo.attributes.vLength.needsUpdate = true;
+
+
     }
 
     if (this.lines.length > this.approx.length) {
