@@ -39,6 +39,7 @@ class Overlay {
       transform: translate(-50%,-50%);
       -ms-transform: translate(-50%,-50%);
       max-height: 80%;
+      max-width: 80%;
       overflow: auto;
     `;
 

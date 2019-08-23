@@ -2,7 +2,7 @@ const THREE = require('three');
 
 // Config
 const maxVel = 0.00015;
-const numberOfCircles = 100;
+const numberOfCircles = 50;
 
 class Circle {
 
@@ -88,7 +88,7 @@ class DrawableCircle extends Circle{
 
     this.mesh = new THREE.Mesh(
       new THREE.CircleGeometry(0.04, 10),
-      new THREE.MeshBasicMaterial({ color: 0xaaaaaa })
+      new THREE.MeshBasicMaterial({ color: 0xdddddd })
     );
     scene.add(this.mesh);
     this.approx = [];
